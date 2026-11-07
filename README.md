@@ -39,3 +39,18 @@ Run the following commands in your terminal to set up the environment, download 
 | **Member B (Alisha)** | Exploration and corpus statistics (`src/explore.py`, `notebooks/01_exploration.ipynb`) | `feat/alisha-exploration` |
 | **Member C (Maryam)** | Tokenization and regular expressions (`src/regex_patterns.py`, `src/tokenization.py`, `notebooks/02_tokenization_regex.ipynb`) | `feat/maryam-tokenization-regex` |
 | **Member D (Mati)** | Cleaning pipeline (`src/cleaning.py`, `src/run_pipeline.py`, `notebooks/03_cleaning_pipeline.ipynb`) | `feat/mati-cleaning-pipeline` |
+
+## 5. Exploration Findings (Task 2 - Alisha)
+Code: `src/explore.py`. Notebook: `notebooks/01_exploration.ipynb` (run it to reproduce). Figures are saved in `reports/figures/`.
+
+| Statistic | Value |
+| :--- | :--- |
+| Documents | 50,000 (no missing values, 418 exact duplicates) |
+| Words per review | mean 231.2, median 173, min 4, max 2,470 |
+| Target distribution | 25,000 positive, 25,000 negative |
+| Tokens / types (5,000-review sample) | 1,412,078 / 53,488 (type-token ratio 0.038) |
+| Hapax legomena | 25,147 (47.0% of types) |
+
+**Zipf's law:** the log-log rank/frequency plot is close to a straight line, and the 100 most frequent types cover 55.3% of all tokens.
+
+**Messy text found (share of reviews):** HTML `<br />` 58.4%, ALL-CAPS words 22.7%, explicit ratings such as 8/10 9.3%, non-ASCII characters 9.3%, extra spaces 5.0%, elongated words 3.1%, URLs 0.4%.
