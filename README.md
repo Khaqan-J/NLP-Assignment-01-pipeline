@@ -22,7 +22,7 @@ Our project classifies movie reviews as positive or negative (binary sentiment a
 ## 3. Reproducibility (How to Run from Scratch)
 Run the following commands in your terminal to set up the environment, download the raw dataset, and run the complete cleaning pipeline[cite: 51, 52]:
 
-    git clone [https://github.com/Khaqan-J/NLP-Assignment-01-pipeline.git](https://github.com/YOUR-USERNAME/NLP-Assignment-01-pipeline.git)
+    git clone [https://github.com/Khaqan-J/NLP-Assignment-01-pipeline.git](https://github.com/Khaqan-J/NLP-Assignment-01-pipeline.git)
     cd NLP-Assignment-01-pipeline
     python -m venv .venv
     source .venv/Scripts/activate
@@ -35,7 +35,7 @@ Run the following commands in your terminal to set up the environment, download 
 ## 4. Team Members & Responsibilities
 | Member | Main Responsibility | Branch |
 | :--- | :--- | :--- |
-| **Member A (Team Lead)** | Setup, data loading, reproducibility (`src/config.py`, `src/data.py`, `src/nltk_setup.py`, `README.md`)[cite: 51] | `feat/setup-data`[cite: 51] |
-| **Member B** | Exploration and corpus statistics (`src/explore.py`, `notebooks/01_exploration.ipynb`)[cite: 51] | `feat/exploration`[cite: 51] |
-| **Member C** | Tokenization and regular expressions (`src/regex_patterns.py`, `src/tokenization.py`, `notebooks/02_tokenization_regex.ipynb`)[cite: 51] | `feat/tokenization-regex`[cite: 51] |
-| **Member D** | Cleaning pipeline (`src/cleaning.py`, `src/run_pipeline.py`, `notebooks/03_cleaning_pipeline.ipynb`)[cite: 51] | `feat/cleaning-pipeline`[cite: 51] |
+| **Member A (Khaqan) (Team Lead)** | Setup, data loading, reproducibility (`src/config.py`, `src/data.py`, `src/nltk_setup.py`, `README.md`)[cite: 51] | `feat/khaqan-setup-data`[cite: 51] |
+| **Member B (Alisha)** | Exploration and corpus statistics (`src/explore.py`, `notebooks/01_exploration.ipynb`)[cite: 51] | `feat/alisha-exploration`[cite: 51] |
+| **Member C (Maryam)** | Tokenization and regular expressions (`src/regex_patterns.py`, `src/tokenization.py`, `notebooks/02_tokenization_regex.ipynb`)[cite: 51] | `feat/maryam-tokenization-regex`[cite: 51] |
+| **Member D (Mati)** | Cleaning pipeline (`src/cleaning.py`, `src/run_pipeline.py`, `notebooks/03_cleaning_pipeline.ipynb`)[cite: 51] | `feat/mati-cleaning-pipeline`[cite: 51] |
