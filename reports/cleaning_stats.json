@@ -1,0 +1,9 @@
+{
+  "documents": 49582,
+  "tokens_before": 13903009,
+  "tokens_after": 6153922,
+  "types_before": 167400,
+  "types_after": 83159,
+  "vocab_reduction_percent": 50.32,
+  "runtime_seconds": 412.5
+}
