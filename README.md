@@ -1,131 +1,177 @@
-# NLP Assignment 1 — Phase 1: Cleaning IMDB Movie Reviews for Sentiment Analysis
+# End-to-End NLP Pipeline: IMDB Movie Reviews
+**Course:** Introduction to Natural Language Processing  
+**Repository Tags:** `assignment-1` (Phase 1) | `assignment-2` (Phase 2)
 
-## 1. Topic and Dataset
-Our project classifies movie reviews as positive or negative (binary sentiment analysis). We use the **IMDB Dataset of 50K Movie Reviews**, which has 50,000 English reviews with perfectly balanced labels.
+An end-to-end Natural Language Processing pipeline built on the **Stanford Large Movie Review Dataset (50,000 IMDB movie reviews)** for binary sentiment analysis.
+* **Phase 1 (`assignment-1`):** Data acquisition, corpus exploration, regular expression cataloguing, tokenizer benchmarking, and an 8-step sentiment-aware text cleaning and normalization pipeline.
+* **Phase 2 (`assignment-2`):** Count-based representations (Bag of Words, TF-IDF, N-grams, hand-worked numerical verification), learned neural word embeddings (`Word2Vec` CBOW, `Word2Vec` Skip-gram, `fastText`), intrinsic semantic probing, and unified model packaging for downstream classification.
 
-| Item | Value |
-| :--- | :--- |
-| **Source** | Maas et al. (2011), *Learning Word Vectors for Sentiment Analysis*, ACL (`http://ai.stanford.edu/~amaas/data/sentiment/`) |
-| **Download used by our script** | Public GitHub mirror of the 50K CSV (`DATA_URL` in `src/config.py`) |
-| **Size** | 50,000 reviews (25,000 positive, 25,000 negative); 49,582 after dropping 418 exact duplicates |
-| **Licence** | Released by the authors for research use; paper cited |
-| **Future target (Phase 2)** | `label`: `1` = positive, `0` = negative |
+---
+
+## 1. Team Members & Branch Architecture
+
+| Member | Role | Phase 1 Branch & Tasks (`assignment-1`) | Phase 2 Branch & Tasks (`assignment-2`) |
+| :--- | :--- | :--- | :--- |
+| **Khaqan Javed** | Team Lead | `feat/khaqan-setup-data`<br>Repo setup, config, automated dataset loader (`src/data.py`), README & release tagging | `feat/khaqan-phase2-packaging`<br>Part D: Model persistence (`src/save_models.py`), `vectorize()` interface (`src/vectorize.py`), notebook `07`, README & `assignment-2` tag |
+| **Alisha** | Member | `feat/alisha-exploration`<br>Task 2: Corpus statistics, Zipf's law & length plots, messy text analysis (`src/explore.py`, notebook `01`) | `feat/alisha-embeddings`<br>Part B: `Word2Vec` CBOW (`sg=0`), Skip-gram (`sg=1`), `fastText` training & OOV demonstration (`src/embeddings.py`, notebook `05`) |
+| **Maryam** | Member | `feat/maryam-tokenization-regex`<br>Task 3: 7 regex patterns & Regex vs. NLTK vs. spaCy benchmarks (`src/regex_patterns.py`, `src/tokenization.py`, notebook `02`) | `feat/maryam-probing-numerical`<br>Part A4 & Part C: Toy numerical TF-IDF/bigram verification & semantic probing (`src/probing.py`, notebook `06`) |
+| **Mati** | Member | `feat/mati-cleaning-pipeline`<br>Task 4 & 5: 8-step normalization, sentiment-safe stopwords & lemmatization (`src/cleaning.py`, `src/run_pipeline.py`, notebook `03`) | `feat/mati-count-representations`<br>Part A1–A3: Bag of Words, TF-IDF weight analysis & N-gram growth trade-off (`src/count_reps.py`, notebook `04`) |
+
+---
 
 ## 2. Repository Structure
-- `src/config.py` — Paths, dataset URL, and constants
-- `src/data.py` — Script to download and verify the raw IMDB dataset (without committing raw data)
-- `src/nltk_setup.py` — Downloads required NLTK tokenizers, stop words, and WordNet
-- `src/explore.py` & `notebooks/01_exploration.ipynb` — Corpus statistics, Zipf plot, and messy text analysis
-- `src/regex_patterns.py`, `src/tokenization.py` & `notebooks/02_tokenization_regex.ipynb` — Regex, NLTK, and spaCy tokenizer comparison
-- `src/cleaning.py`, `src/run_pipeline.py` & `notebooks/03_cleaning_pipeline.ipynb` — End-to-end normalization and cleaning pipeline
 
-## 3. Reproducibility (How to Run from Scratch)
-Run the following commands in your terminal to set up the environment, download the raw dataset, and run the complete cleaning pipeline:
+```text
+NLP-Assignment-01-pipeline/
+├── data/
+│   ├── raw/                              # Raw IMDB_Dataset.csv (50,000 reviews, gitignored)
+│   └── processed/                        # Cleaned imdb_cleaned.csv (49,582 deduplicated reviews, gitignored)
+├── models/                               # Saved Phase 2 models (generated via python -m src.save_models)
+│   ├── tfidf.pkl                         # Fitted TfidfVectorizer (50,000 max features)
+│   ├── cbow.model                        # Trained Word2Vec CBOW model (100-d)
+│   ├── skipgram.model                    # Trained Word2Vec Skip-gram model (100-d)
+│   └── fasttext.model                    # Trained fastText sub-word model (100-d)
+├── notebooks/
+│   ├── 01_exploration.ipynb              # Phase 1 (Alisha): Corpus statistics, Zipf plot & noise analysis
+│   ├── 02_tokenization_regex.ipynb       # Phase 1 (Maryam): Regex catalog & tokenizer benchmarks
+│   ├── 03_cleaning_pipeline.ipynb        # Phase 1 (Mati): 8-step cleaning examples & vocab reduction
+│   ├── 04_count_representations.ipynb    # Phase 2 (Mati): BoW, TF-IDF high/low weights & N-gram growth
+│   ├── 05_learned_embeddings.ipynb       # Phase 2 (Alisha): CBOW, Skip-gram, fastText & OOV queries
+│   ├── 06_probing_and_numerical.ipynb    # Phase 2 (Maryam): Hand-worked numerical check & embedding probes
+│   └── 07_packaging_vectorize.ipynb      # Phase 2 (Khaqan): Saved models & vectorize(doc, method) demo
+├── reports/
+│   ├── cleaning_stats.json               # Before/after vocabulary reduction metrics
+│   └── figures/                          # Generated Zipf's law and length/label distribution plots
+├── src/
+│   ├── config.py                         # Centralized paths and constants
+│   ├── data.py                           # Automated IMDB dataset downloader and deduplicator
+│   ├── nltk_setup.py                     # NLTK resource initializer
+│   ├── explore.py                        # Phase 1 corpus exploration & plotting
+│   ├── regex_patterns.py                 # Compiled regular expressions for noise detection & tokenization
+│   ├── tokenization.py                   # Regex, NLTK, and spaCy tokenizer comparisons
+│   ├── cleaning.py                       # 8-step normalization, negation handling & spaCy lemmatization
+│   ├── run_pipeline.py                   # End-to-end Phase 1 cleaning runner
+│   ├── count_reps.py                     # Phase 2 Part A1–A3 (BoW, TF-IDF, N-grams)
+│   ├── embeddings.py                     # Phase 2 Part B1–B4 (Word2Vec CBOW, Skip-gram, fastText)
+│   ├── probing.py                        # Phase 2 Part A4 & C1–C3 (Toy verification, similarity, analogy)
+│   ├── save_models.py                    # Phase 2 Part D1 (Trains and saves all representations once)
+│   └── vectorize.py                      # Phase 2 Part D2 (Unified vectorize(raw_doc, method) interface)
+├── requirements.txt                      # Python package dependencies
+└── README.md                             # Project documentation
+```
 
-    git clone https://github.com/Khaqan-J/NLP-Assignment-01-pipeline.git
-    cd NLP-Assignment-01-pipeline
-    python -m venv .venv
-    source .venv/Scripts/activate
-    pip install -r requirements.txt
-    python -m spacy download en_core_web_sm
-    python -m src.nltk_setup
-    python -m src.data
-    python -m src.run_pipeline
+---
 
-## 4. Team Members & Responsibilities
-| Member | Main Responsibility | Branch |
-| :--- | :--- | :--- |
-| **Member A (Khaqan) (Team Lead)** | Setup, data loading, reproducibility (`src/config.py`, `src/data.py`, `src/nltk_setup.py`, `README.md`) | `feat/khaqan-setup-data` |
-| **Member B (Alisha)** | Exploration and corpus statistics (`src/explore.py`, `notebooks/01_exploration.ipynb`) | `feat/alisha-exploration` |
-| **Member C (Maryam)** | Tokenization and regular expressions (`src/regex_patterns.py`, `src/tokenization.py`, `notebooks/02_tokenization_regex.ipynb`) | `feat/maryam-tokenization-regex` |
-| **Member D (Mati)** | Cleaning pipeline (`src/cleaning.py`, `src/run_pipeline.py`, `notebooks/03_cleaning_pipeline.ipynb`) | `feat/mati-cleaning-pipeline` |
+## 3. Environment Setup & Installation
 
-## 5. Exploration Findings (Task 2 - Alisha)
-Code: `src/explore.py`. Notebook: `notebooks/01_exploration.ipynb` (run it to reproduce). Figures are saved in `reports/figures/`.
+```bash
+# 1. Clone the repository
+git clone https://github.com/Khaqan-J/NLP-Assignment-01-pipeline.git
+cd NLP-Assignment-01-pipeline
+
+# 2. Create and activate a Python 3.12 virtual environment
+py -3.12 -m venv .venv
+source .venv/Scripts/activate
+
+# 3. Install dependencies and language resources
+pip install -r requirements.txt
+python -m spacy download en_core_web_sm
+python -m src.nltk_setup
+```
+
+---
+
+## 4. Phase 1: Data Acquisition, Exploration, Tokenization & Cleaning (`assignment-1`)
+
+### 4.1 Data Acquisition & Deduplication (Task 1 — Khaqan)
+* **Code:** `src/config.py`, `src/data.py`
+* Automatically downloads the 50,000 IMDB movie reviews (`25,000` positive, `25,000` negative) into `data/raw/IMDB_Dataset.csv` and removes `418` exact duplicate reviews to yield **`49,582` unique documents**.
+
+### 4.2 Exploration Findings (Task 2 — Alisha)
+* **Code:** `src/explore.py` | **Notebook:** `notebooks/01_exploration.ipynb` | **Figures:** `reports/figures/`
 
 | Statistic | Value |
 | :--- | :--- |
-| Documents | 50,000 (no missing values, 418 exact duplicates) |
-| Words per review | mean 231.2, median 173, min 4, max 2,470 |
-| Target distribution | 25,000 positive, 25,000 negative |
-| Tokens / types (5,000-review sample) | 1,412,078 / 53,488 (type-token ratio 0.038) |
-| Hapax legomena | 25,147 (47.0% of types) |
+| **Documents** | `50,000` (no missing values, `418` exact duplicates) |
+| **Words per review** | mean `231.2`, median `173`, min `4`, max `2,470` |
+| **Target distribution** | `25,000` positive, `25,000` negative |
+| **Tokens / types (5,000-review sample)** | `1,412,078` / `53,488` (type-token ratio `0.038`) |
+| **Hapax legomena** | `25,147` (`47.0%` of types) |
 
-**Zipf's law:** the log-log rank/frequency plot is close to a straight line, and the 100 most frequent types cover 55.3% of all tokens.
+* **Zipf's law:** The log-log rank/frequency plot is close to a straight line, and the 100 most frequent types cover **`55.3%`** of all tokens.
+* **Messy text found (share of reviews):** HTML `<br />` `58.4%`, ALL-CAPS words `22.7%`, explicit ratings such as `8/10` `9.3%`, non-ASCII characters `9.3%`, extra spaces `5.0%`, elongated words `3.1%`, URLs `0.4%`.
 
-**Messy text found (share of reviews):** HTML `<br />` 58.4%, ALL-CAPS words 22.7%, explicit ratings such as 8/10 9.3%, non-ASCII characters 9.3%, extra spaces 5.0%, elongated words 3.1%, URLs 0.4%.
+### 4.3 Tokenization & Regular Expressions (Task 3 — Maryam)
+* **Code:** `src/regex_patterns.py`, `src/tokenization.py` | **Notebook:** `notebooks/02_tokenization_regex.ipynb`
+* Benchmarks custom `TOKEN_REGEX`, NLTK `word_tokenize`, and spaCy `en_core_web_sm` on a 2,000-review sample and catalogues 7 regex patterns (`HTML_TAG`, `URL`, `ELONGATION`, `RATING`, `CONTRACTION`, `ALLCAPS`, `EMOTICON`) across all 50,000 reviews.
 
-## 6. Phase 2: Word Representations (Assignment 2)
-Building on the cleaned IMDB dataset (`data/processed/imdb_cleaned.csv`), Phase 2 implements count-based and dense word representations, numerical & semantic probing, and model packaging.
+### 4.4 Cleaning & Normalization Pipeline (Task 4 & 5 — Mati)
+* **Code:** `src/cleaning.py`, `src/run_pipeline.py` | **Notebook:** `notebooks/03_cleaning_pipeline.ipynb` | **Stats:** `reports/cleaning_stats.json`
+* **8-Step Pipeline:** (1) Unicode NFC & quote/dash normalization, (2) HTML entity unescaping & `<br />` tag stripping, (3) URL removal, (4) Lowercasing (after logging ALL-CAPS count), (5) Elongated character collapsing, (6) Contraction/negation expansion (`n't` -> `not`), (7) Lemmatization & non-alphabetic filtering, and (8) Sentiment-aware stop-word removal (preserving 30 negations and intensifiers).
+* Reduces raw vocabulary from `167,400` types (`13,903,009` tokens) down to `83,159` lemmatized types (`-50.32%` reduction) across `49,582` deduplicated reviews.
 
-### How to Run Phase 2 Modules
-- **Part A — Count Representations (BoW, TF-IDF, N-grams):**
-  ```bash
-  python -m src.count_reps
-  ```
-- 3. Part B: Learned Embeddings
-Unlike count-based vectors, which are long and sparse, embeddings are short dense vectors learned from the corpus so that words used in similar contexts get similar vectors. We trained all models with gensim on the same tokenized corpus: the cleaned IMDB reviews from Phase 1 (data/processed/imdb_cleaned.csv, column text_clean), split into tokens (49,582 reviews, 6,219,655 tokens, 98,695 unique tokens).
-B1 and B2. Word2Vec (CBOW and Skip-gram)
-Both models use identical hyperparameters so that only the training scheme differs (sg=0 for CBOW, sg=1 for Skip-gram).
-Hyperparameter
-Value
-vector_size                100
-window                      5
-min_count                   5
-epochs                      5
-seed                        42
-workers                     4
-Resulting vocabulary size   38,984
+---
 
-Model                      Training runtime (s)         Vocabulary size
-Word2Vec CBOW (sg=0)           28.20                        38,984
-Word2Vec Skip-gram (sg=1)     90.39                         38,984
-Both models were trained with gensim.models.Word2Vec in src/embeddings.py. They have the same vocabulary size, because the corpus and min_count are identical: only words that occur at least 5 times are kept (38,984 of the 98,695 unique tokens).
-from gensim.models import Word2Vec
+## 5. Phase 2: Word Representations (`assignment-2`)
 
-PARAMS = dict(vector_size=100, window=5, min_count=5,
-              epochs=5, seed=42, workers=4)
+Building on the cleaned IMDB dataset (`data/processed/imdb_cleaned.csv`: `49,582` documents, `6,219,655` tokens, `98,695` unique word types, average length `125.4` tokens), Phase 2 implements and compares count-based and learned neural word representations.
 
-# B1: Word2Vec CBOW (sg=0)
-cbow = Word2Vec(sentences, sg=0, **PARAMS)
+### 5.1 Part A: Count-Based Representations (Mati & Maryam)
+* **Code:** `src/count_reps.py`, `src/probing.py` | **Notebooks:** `notebooks/04_count_representations.ipynb`, `notebooks/06_probing_and_numerical.ipynb`
+* **A1. Bag of Words (`CountVectorizer`):** Shape **`(49,582, 98,695)`**, `4,987,316` non-zero entries, **`99.8981%` sparsity**.
+* **A2. TF-IDF High vs. Near-Zero Weights (Document 0):**
+  * **High weight:** `oz` (`0.4541`, df=`176`), `violence` (`0.1997`, df=`1,693`), `prison` (`0.1836`, df=`629`).
+  * **Near zero (common):** `well` (`0.0251`, df=`14,887`), `no` (`0.0242`, df=`16,115`), `one` (`0.0178`, df=`28,208`).
+* **A3. N-Gram Vocabulary Growth (`min_df=5`):**
 
-# B2: Word2Vec Skip-gram (sg=1), same hyperparameters
-skipgram = Word2Vec(sentences, sg=1, **PARAMS)
+| N-gram Range | Number of Features | Matrix Shape | Sparsity (%) |
+| :--- | :--- | :--- | :--- |
+| **Unigrams `(1,1)`** | `36,424` | `(49,582, 36,424)` | `99.7293%` |
+| **Uni + Bigrams `(1,2)`** | `182,468` | `(49,582, 182,468)` | `99.9186%` |
+| **Uni + Bi + Trigrams `(1,3)`** | `210,405` | `(49,582, 210,405)` | `99.9265%` |
 
-B3. CBOW vs Skip-gram
-CBOW (Continuous Bag of Words) predicts the centre word from its surrounding context words (context to centre). The context words are averaged into a single vector, so there is only one prediction per window. Skip-gram does the reverse: it predicts each surrounding word from the centre word (centre to context), so every (centre, context) pair becomes a separate training example.
-This difference explains the usual trade-off. CBOW trains faster and its averaging works well for frequent words that occur in many contexts. Skip-gram is slower, but a rare word receives many more updates than it would under CBOW, so it tends to represent rare words better. In a movie-review corpus, rare terms such as specific director, genre or technical words are exactly where we expect Skip-gram to do better.
-In our runs, CBOW trained in 28.20 seconds and Skip-gram in 90.39 seconds (CBOW was about 3.2 times faster, as expected). For the in-vocabulary probe words (movie, acting, horror, director) the picture is mixed. For the very frequent word “movie”, CBOW gave clean neighbours (film, movies, flick, really, films), while Skip-gram returned rarer and noisier tokens (atleast, sequal, suprise, hellbent). For “acting”, CBOW stayed close to the topic (performances, casting, directing), whereas Skip-gram drifted to unusual words (varies, staggeringly, complimented). For the more specific words Skip-gram looked slightly better: for “horror” both gave sensible genre words (CBOW: slasher, exploitation, zombie, splatter; Skip-gram: slasher, slashers, omnibus, amicus, goriest), and for “director” Skip-gram added related film roles (writer, screenwriter, cinematographer) while CBOW mostly returned variants of the same word (filmmaker, directors, filmmakers). So our results only partly agree with the expectation: Skip-gram was somewhat better on rarer, topic-specific words, but CBOW was cleaner on very frequent words. The corpus has about 6.2 million tokens and the models were trained for only 5 epochs, so this comparison should be interpreted cautiously.
-B4. fastText
-Word2Vec treats every word as one indivisible unit, so a word that is not in the training vocabulary has no vector. fastText represents each word as a bag of character n-grams (for example, the word “where” contributes pieces such as <wh, whe, her, ere, re>) and builds the word vector from these sub-word pieces. This lets fastText produce a sensible vector for rare, misspelled or unseen words by reusing the pieces it has seen in other words.
-from gensim.models import FastText
+* **A4. Hand-Worked Numerical Verification:** Confirmed exact match on the 4-document toy corpus for `"great"` in `D1` (`IDF = 1.223144`, raw `TF-IDF = 2.446287`, L2 `TF-IDF = 0.749377`) and bigram `"great movie"` counts `[1, 1, 0, 0]`.
 
-# B4: fastText (character n-gram sub-words), same hyperparameters
-fasttext = FastText(sentences, sg=0, **PARAMS)
-fastText was trained with the same hyperparameters as above (training runtime 117.72 s, vocabulary size 38,984).
-Out-of-vocabulary / misspelled word demonstration (query words: cinematographyyy, horrrorrr):
-Model
-cinematographyyy
-horrrorrr
-Word2Vec (CBOW)
-KeyError (word not in vocabulary)
-KeyError (word not in vocabulary)
-Word2Vec (Skip-gram)  KeyError (word not in vocabulary)   KeyError (word not in vocabulary)
-fastText (top-5 similar words)   cinematography (0.9942), cinematograph (0.9930), cinematographic (0.9431), cinematographer (0.9295), cinematographers (0.9180)
-horror (0.8951), horrors (0.8709), horrorfest (0.8119), horrid (0.7461), terror (0.7215)
-Both Word2Vec models raise a KeyError for the two misspelled words, because these words never appeared in the training vocabulary and so have no vector at all. fastText also does not have them in its vocabulary (in-vocabulary check: False), but it builds a vector from the character n-grams they share with known words, and returns sensible neighbours. For “cinematographyyy” all five neighbours are forms of cinematography (similarity 0.92 to 0.99), and for “horrrorrr” it returns horror, horrors and horrorfest first, followed by horrid and terror. The neighbours for “horrrorrr” are a little less precise (0.72 to 0.90) than for “cinematographyyy”, because the repeated letters change more of the character n-grams, but the intended word is still ranked first. This shows the practical benefit of sub-word information on noisy review text, where misspelled and stretched words are common.
+### 5.2 Part B: Learned Embeddings — Word2Vec & fastText (Alisha)
+* **Code:** `src/embeddings.py` | **Notebook:** `notebooks/05_learned_embeddings.ipynb`
+* **Hyperparameters:** `vector_size=100`, `window=5`, `min_count=5`, `epochs=5`, `seed=42` (Vocabulary size: **`38,984` words**).
+* **Training Runtimes:** `Word2Vec` CBOW (`sg=0`): `13.0s` | `Word2Vec` Skip-gram (`sg=1`): `44.1s` | `fastText`: `65.6s`.
+* **OOV Demonstration (`"cinematographyyy"`):** Word2Vec raises `KeyError`, while `fastText` retrieves `cinematography (0.994)`, `cinematograph (0.993)`, `cinematographic (0.944)`, `cinematographer (0.935)`.
 
-  ```
-- **Part C — Numerical Verification & Semantic Probing:**
-  ```bash
-  python -m src.probing
-  ```
-- **Part D — Model Packaging & Unified Vectorization Interface:**
-  1. Train and save all 4 models (`tfidf.pkl`, `cbow.model`, `skipgram.model`, `fasttext.model`) to `models/` once:
-     ```bash
-     python -m src.save_models
-     ```
-  2. Vectorize any raw document using `vectorize(raw_doc, method)` without retraining:
-     ```bash
-     python -m src.vectorize
-     ```
+### 5.3 Part C: Probing & Comparison (Maryam)
+* **Code:** `src/probing.py` | **Notebook:** `notebooks/06_probing_and_numerical.ipynb`
+
+| Word Pair | Expected | CBOW | Skip-gram | fastText |
+| :--- | :--- | :--- | :--- | :--- |
+| **`film` / `movie`** | Similar | `0.8531` | `0.9008` | `0.8175` |
+| **`excellent` / `superb`** | Similar | `0.8802` | `0.8936` | `0.8563` |
+| **`horror` / `popcorn`** | Unrelated | `0.3349` | `0.5073` | `0.2869` |
+| **`script` / `spaceship`** | Unrelated | `-0.1241` | `0.2672` | `-0.0581` |
+
+* **Word Analogy (`actor - man + woman`):** All three models rank **`actress`** #1 (`CBOW: 0.821`, `Skip-gram: 0.885`, `fastText: 0.855`).
+
+### 5.4 Part D: Packaging & Vectorization Interface (Khaqan)
+* **Code:** `src/save_models.py`, `src/vectorize.py` | **Notebook:** `notebooks/07_packaging_vectorize.ipynb`
+* `src/save_models.py` saves `models/tfidf.pkl`, `models/cbow.model`, `models/skipgram.model`, and `models/fasttext.model`.
+* `vectorize(raw_doc, method)` cleans any raw document and returns its `(50000,)` TF-IDF vector or `(100,)` averaged embedding vector without retraining.
+
+---
+
+## 6. Reproducibility
+
+```bash
+# Checkout the submission tag
+git checkout assignment-2
+
+# Phase 1: Download raw data and generate cleaned corpus
+python -m src.data
+python -m src.explore
+python -m src.tokenization
+python -m src.run_pipeline
+
+# Phase 2: Run count representations, train & save models, run probing, and test vectorize()
+python -m src.count_reps
+python -m src.save_models
+python -m src.probing
+python -m src.vectorize
+```
