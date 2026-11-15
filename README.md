@@ -54,3 +54,29 @@ Code: `src/explore.py`. Notebook: `notebooks/01_exploration.ipynb` (run it to re
 **Zipf's law:** the log-log rank/frequency plot is close to a straight line, and the 100 most frequent types cover 55.3% of all tokens.
 
 **Messy text found (share of reviews):** HTML `<br />` 58.4%, ALL-CAPS words 22.7%, explicit ratings such as 8/10 9.3%, non-ASCII characters 9.3%, extra spaces 5.0%, elongated words 3.1%, URLs 0.4%.
+
+## 6. Phase 2: Word Representations (Assignment 2)
+Building on the cleaned IMDB dataset (`data/processed/imdb_cleaned.csv`), Phase 2 implements count-based and dense word representations, numerical & semantic probing, and model packaging.
+
+### How to Run Phase 2 Modules
+- **Part A — Count Representations (BoW, TF-IDF, N-grams):**
+  ```bash
+  python -m src.count_reps
+  ```
+- **Part B — Learned Word Embeddings (Word2Vec CBOW, Skip-gram, fastText):**
+  ```bash
+  python -m src.embeddings
+  ```
+- **Part C — Numerical Verification & Semantic Probing:**
+  ```bash
+  python -m src.probing
+  ```
+- **Part D — Model Packaging & Unified Vectorization Interface:**
+  1. Train and save all 4 models (`tfidf.pkl`, `cbow.model`, `skipgram.model`, `fasttext.model`) to `models/` once:
+     ```bash
+     python -m src.save_models
+     ```
+  2. Vectorize any raw document using `vectorize(raw_doc, method)` without retraining:
+     ```bash
+     python -m src.vectorize
+     ```
