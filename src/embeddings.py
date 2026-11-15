@@ -1,116 +1,54 @@
-"""Part B: learned word embeddings (Word2Vec CBOW, Word2Vec Skip-gram, fastText)
-and an out-of-vocabulary (OOV) demonstration.
-
-Run from the repository root:
-    python -m src.embeddings
-
-All three models share identical hyperparameters so the comparison is fair;
-only the training scheme differs (CBOW: sg=0, Skip-gram: sg=1, fastText: sub-words).
-"""
-
 import time
-from pathlib import Path
-
 import pandas as pd
-from gensim.models import FastText, Word2Vec
+from gensim.models import Word2Vec, FastText
+from src.config import CLEANED_CSV_PATH, ROOT_DIR
 
-ROOT = Path(__file__).resolve().parents[1]
-DATA_PATH = ROOT / "data" / "processed" / "imdb_cleaned.csv"
-MODEL_DIR = ROOT / "models"  # saved locally only, do NOT commit .model files
+MODELS_DIR = ROOT_DIR / "models"
 
-PARAMS = dict(
-    vector_size=100,
-    window=5,
-    min_count=5,
-    epochs=5,
-    seed=42,
-    workers=4,
-)
+def train_and_evaluate_embeddings(save_to_disk=True):
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    df = pd.read_csv(CLEANED_CSV_PATH).dropna(subset=["text_clean"])
+    sentences = [t.split() for t in df["text_clean"].astype(str)]
 
-# Misspelled / unseen domain words used for the OOV demonstration
-OOV_WORDS = ["cinematographyyy", "horrrorrr"]
+    params = dict(vector_size=100, window=5, min_count=5, epochs=5, seed=42, workers=4)
+    print("=== Part B1 & B2: Hyperparameters ===")
+    for k, v in params.items():
+        if k != "workers":
+            print(f"  {k:15s}: {v}")
 
+    t0 = time.perf_counter()
+    cbow_model = Word2Vec(sentences=sentences, sg=0, **params)
+    t_cbow = time.perf_counter() - t0
+    print(f"\nTrained Word2Vec CBOW (sg=0)      | Vocab size: {len(cbow_model.wv):,} | Time: {t_cbow:.1f}s")
 
-def load_sentences(path=DATA_PATH):
-    """Return the cleaned reviews as a list of token lists."""
-    if not Path(path).exists():
-        raise FileNotFoundError(
-            f"{path} not found. Generate it first with: python -m src.run_pipeline"
-        )
-    df = pd.read_csv(path)
-    return [str(text).split() for text in df["text_clean"].dropna()]
+    t0 = time.perf_counter()
+    sg_model = Word2Vec(sentences=sentences, sg=1, **params)
+    t_sg = time.perf_counter() - t0
+    print(f"Trained Word2Vec Skip-gram (sg=1) | Vocab size: {len(sg_model.wv):,} | Time: {t_sg:.1f}s")
 
+    t0 = time.perf_counter()
+    ft_model = FastText(sentences=sentences, sg=0, **params)
+    t_ft = time.perf_counter() - t0
+    print(f"Trained fastText (sub-word ngrams)| Vocab size: {len(ft_model.wv):,} | Time: {t_ft:.1f}s")
 
-def _timed(train_fn):
-    """Run train_fn() and return (model, seconds)."""
-    start = time.perf_counter()
-    model = train_fn()
-    return model, time.perf_counter() - start
+    if save_to_disk:
+        cbow_model.save(str(MODELS_DIR / "cbow.model"))
+        sg_model.save(str(MODELS_DIR / "skipgram.model"))
+        ft_model.save(str(MODELS_DIR / "fasttext.model"))
 
+    print("\n=== Part B4: Out-of-Vocabulary (OOV) / Misspelled Word Demonstration ===")
+    oov_word = "cinematographyyy"
+    print(f"Query OOV / Misspelled Word: '{oov_word}'")
+    for name, mdl in [("Word2Vec (CBOW)", cbow_model), ("Word2Vec (Skip-gram)", sg_model)]:
+        try:
+            _ = mdl.wv.most_similar(oov_word, topn=5)
+        except KeyError as e:
+            print(f"  {name:22s}: KeyError ({e})")
 
-def train_cbow(sentences):
-    """B1: Word2Vec CBOW (sg=0)."""
-    return _timed(lambda: Word2Vec(sentences, sg=0, **PARAMS))
-
-
-def train_skipgram(sentences):
-    """B2: Word2Vec Skip-gram (sg=1), same hyperparameters as CBOW."""
-    return _timed(lambda: Word2Vec(sentences, sg=1, **PARAMS))
-
-
-def train_fasttext(sentences):
-    """B4: fastText (character n-gram sub-words), same hyperparameters."""
-    return _timed(lambda: FastText(sentences, sg=0, **PARAMS))
-
-
-def describe(name, model, seconds):
-    print(f"\n=== {name} ===")
-    print("Hyperparameters :", PARAMS)
-    print(f"Training runtime: {seconds:.2f} s")
-    print(f"Vocabulary size : {len(model.wv)}")
-
-
-def oov_demo(cbow, skipgram, fasttext, words=OOV_WORDS):
-    """Show that Word2Vec fails on OOV words while fastText still returns vectors."""
-    for word in words:
-        print(f"\n--- OOV / misspelled word: '{word}' ---")
-        for name, model in (("Word2Vec CBOW", cbow), ("Word2Vec Skip-gram", skipgram)):
-            try:
-                model.wv[word]
-                print(f"{name}: found in vocabulary (unexpected, try another word)")
-            except KeyError:
-                print(f"{name}: KeyError (word not in vocabulary)")
-        print("fastText in vocabulary:", word in fasttext.wv.key_to_index)
-        print("fastText top-5 similar words (via character n-grams):")
-        for neighbour, score in fasttext.wv.most_similar(word, topn=5):
-            print(f"   {neighbour:<20} {score:.4f}")
-
-
-def save_models(cbow, skipgram, fasttext, model_dir=MODEL_DIR):
-    model_dir.mkdir(parents=True, exist_ok=True)
-    cbow.save(str(model_dir / "cbow.model"))
-    skipgram.save(str(model_dir / "skipgram.model"))
-    fasttext.save(str(model_dir / "fasttext.model"))
-    print(f"\nModels saved in {model_dir} (not committed to git).")
-
-
-def main():
-    sentences = load_sentences()
-    n_tokens = sum(len(s) for s in sentences)
-    print(f"Loaded {len(sentences)} documents, {n_tokens} tokens")
-
-    cbow, t_cbow = train_cbow(sentences)
-    describe("B1: Word2Vec CBOW", cbow, t_cbow)
-
-    skipgram, t_sg = train_skipgram(sentences)
-    describe("B2: Word2Vec Skip-gram", skipgram, t_sg)
-
-    fasttext, t_ft = train_fasttext(sentences)
-    describe("B4: fastText", fasttext, t_ft)
-
-    oov_demo(cbow, skipgram, fasttext)
-    save_models(cbow, skipgram, fasttext)
-
+    ft_sim = ft_model.wv.most_similar(oov_word, topn=5)
+    ft_str = ", ".join(f"{w} ({s:.3f})" for w, s in ft_sim)
+    print(f"  {'fastText':22s}: {ft_str}")
+    return cbow_model, sg_model, ft_model
 
 if __name__ == "__main__":
-    main()
+    train_and_evaluate_embeddings()
