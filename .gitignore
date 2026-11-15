@@ -235,3 +235,13 @@ data/processed/*.csv
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !reports/figures/.gitkeep
+
+.venv*
+
+# Saved Phase 2 binary models
+models/*.model
+models/*.npy
+models/*.pkl
+*.zip
+PHASE2_REPORT_ANSWERS.txt
+run_all_phase2.py
