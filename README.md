@@ -63,9 +63,58 @@ Building on the cleaned IMDB dataset (`data/processed/imdb_cleaned.csv`), Phase 
   ```bash
   python -m src.count_reps
   ```
-- **Part B — Learned Word Embeddings (Word2Vec CBOW, Skip-gram, fastText):**
-  ```bash
-  python -m src.embeddings
+- 3. Part B: Learned Embeddings
+Unlike count-based vectors, which are long and sparse, embeddings are short dense vectors learned from the corpus so that words used in similar contexts get similar vectors. We trained all models with gensim on the same tokenized corpus: the cleaned IMDB reviews from Phase 1 (data/processed/imdb_cleaned.csv, column text_clean), split into tokens (49,582 reviews, 6,219,655 tokens, 98,695 unique tokens).
+B1 and B2. Word2Vec (CBOW and Skip-gram)
+Both models use identical hyperparameters so that only the training scheme differs (sg=0 for CBOW, sg=1 for Skip-gram).
+Hyperparameter
+Value
+vector_size                100
+window                      5
+min_count                   5
+epochs                      5
+seed                        42
+workers                     4
+Resulting vocabulary size   38,984
+
+Model                      Training runtime (s)         Vocabulary size
+Word2Vec CBOW (sg=0)           28.20                        38,984
+Word2Vec Skip-gram (sg=1)     90.39                         38,984
+Both models were trained with gensim.models.Word2Vec in src/embeddings.py. They have the same vocabulary size, because the corpus and min_count are identical: only words that occur at least 5 times are kept (38,984 of the 98,695 unique tokens).
+from gensim.models import Word2Vec
+
+PARAMS = dict(vector_size=100, window=5, min_count=5,
+              epochs=5, seed=42, workers=4)
+
+# B1: Word2Vec CBOW (sg=0)
+cbow = Word2Vec(sentences, sg=0, **PARAMS)
+
+# B2: Word2Vec Skip-gram (sg=1), same hyperparameters
+skipgram = Word2Vec(sentences, sg=1, **PARAMS)
+
+B3. CBOW vs Skip-gram
+CBOW (Continuous Bag of Words) predicts the centre word from its surrounding context words (context to centre). The context words are averaged into a single vector, so there is only one prediction per window. Skip-gram does the reverse: it predicts each surrounding word from the centre word (centre to context), so every (centre, context) pair becomes a separate training example.
+This difference explains the usual trade-off. CBOW trains faster and its averaging works well for frequent words that occur in many contexts. Skip-gram is slower, but a rare word receives many more updates than it would under CBOW, so it tends to represent rare words better. In a movie-review corpus, rare terms such as specific director, genre or technical words are exactly where we expect Skip-gram to do better.
+In our runs, CBOW trained in 28.20 seconds and Skip-gram in 90.39 seconds (CBOW was about 3.2 times faster, as expected). For the in-vocabulary probe words (movie, acting, horror, director) the picture is mixed. For the very frequent word “movie”, CBOW gave clean neighbours (film, movies, flick, really, films), while Skip-gram returned rarer and noisier tokens (atleast, sequal, suprise, hellbent). For “acting”, CBOW stayed close to the topic (performances, casting, directing), whereas Skip-gram drifted to unusual words (varies, staggeringly, complimented). For the more specific words Skip-gram looked slightly better: for “horror” both gave sensible genre words (CBOW: slasher, exploitation, zombie, splatter; Skip-gram: slasher, slashers, omnibus, amicus, goriest), and for “director” Skip-gram added related film roles (writer, screenwriter, cinematographer) while CBOW mostly returned variants of the same word (filmmaker, directors, filmmakers). So our results only partly agree with the expectation: Skip-gram was somewhat better on rarer, topic-specific words, but CBOW was cleaner on very frequent words. The corpus has about 6.2 million tokens and the models were trained for only 5 epochs, so this comparison should be interpreted cautiously.
+B4. fastText
+Word2Vec treats every word as one indivisible unit, so a word that is not in the training vocabulary has no vector. fastText represents each word as a bag of character n-grams (for example, the word “where” contributes pieces such as <wh, whe, her, ere, re>) and builds the word vector from these sub-word pieces. This lets fastText produce a sensible vector for rare, misspelled or unseen words by reusing the pieces it has seen in other words.
+from gensim.models import FastText
+
+# B4: fastText (character n-gram sub-words), same hyperparameters
+fasttext = FastText(sentences, sg=0, **PARAMS)
+fastText was trained with the same hyperparameters as above (training runtime 117.72 s, vocabulary size 38,984).
+Out-of-vocabulary / misspelled word demonstration (query words: cinematographyyy, horrrorrr):
+Model
+cinematographyyy
+horrrorrr
+Word2Vec (CBOW)
+KeyError (word not in vocabulary)
+KeyError (word not in vocabulary)
+Word2Vec (Skip-gram)  KeyError (word not in vocabulary)   KeyError (word not in vocabulary)
+fastText (top-5 similar words)   cinematography (0.9942), cinematograph (0.9930), cinematographic (0.9431), cinematographer (0.9295), cinematographers (0.9180)
+horror (0.8951), horrors (0.8709), horrorfest (0.8119), horrid (0.7461), terror (0.7215)
+Both Word2Vec models raise a KeyError for the two misspelled words, because these words never appeared in the training vocabulary and so have no vector at all. fastText also does not have them in its vocabulary (in-vocabulary check: False), but it builds a vector from the character n-grams they share with known words, and returns sensible neighbours. For “cinematographyyy” all five neighbours are forms of cinematography (similarity 0.92 to 0.99), and for “horrrorrr” it returns horror, horrors and horrorfest first, followed by horrid and terror. The neighbours for “horrrorrr” are a little less precise (0.72 to 0.90) than for “cinematographyyy”, because the repeated letters change more of the character n-grams, but the intended word is still ranked first. This shows the practical benefit of sub-word information on noisy review text, where misspelled and stretched words are common.
+
   ```
 - **Part C — Numerical Verification & Semantic Probing:**
   ```bash
