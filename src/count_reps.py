@@ -1,61 +1,223 @@
+
+from pathlib import Path
 import numpy as np
 import pandas as pd
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from src.config import CLEANED_CSV_PATH
+
+from sklearn.feature_extraction.text import (
+    CountVectorizer,
+    TfidfVectorizer
+)
+
+# Dataset location
+DATA_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "data"
+    / "processed"
+    / "imdb_cleaned.csv"
+)
+
+
+# ==========================================
+# LOAD CLEANED DATASET
+# ==========================================
+
+def load_texts():
+    if not DATA_PATH.exists():
+        raise FileNotFoundError(
+            f"Dataset not found: {DATA_PATH}"
+        )
+
+    df = pd.read_csv(DATA_PATH)
+
+    if "text_clean" not in df.columns:
+        raise ValueError(
+            "Column 'text_clean' not found!"
+        )
+
+    texts = df["text_clean"].dropna().astype(str).tolist()
+
+    if not texts:
+        raise ValueError("No reviews found!")
+
+    return texts
+
+
+# ==========================================
+# SECTION 1: CORPUS SUMMARY
+# ==========================================
+
+def corpus_summary(texts):
+
+    token_lists = [text.split() for text in texts]
+
+    total_tokens = sum(len(tokens) for tokens in token_lists)
+
+    vocabulary = set(
+        word
+        for tokens in token_lists
+        for word in tokens
+    )
+
+    avg_length = total_tokens / len(texts)
+
+    print("\n===== SECTION 1: CORPUS SUMMARY =====")
+
+    print("Number of documents:", len(texts))
+    print("Total tokens:", total_tokens)
+    print("Vocabulary size:", len(vocabulary))
+    print("Average document length:", round(avg_length, 2))
+
+    return {
+        "documents": len(texts),
+        "total_tokens": total_tokens,
+        "vocabulary_size": len(vocabulary),
+        "average_document_length": avg_length
+    }
+
+
+# ==========================================
+# PART A1: BAG OF WORDS
+# ==========================================
+
+def bow_analysis(texts):
+
+    print("\n===== PART A1: BAG OF WORDS =====")
+
+    vectorizer = CountVectorizer()
+
+    X_bow = vectorizer.fit_transform(texts)
+
+    rows, cols = X_bow.shape
+
+    non_zero = X_bow.nnz
+
+    sparsity = 100 * (
+        1 - non_zero / (rows * cols)
+    )
+
+    print("Matrix shape:", X_bow.shape)
+    print("Non-zero entries:", non_zero)
+    print(f"Sparsity: {sparsity:.4f}%")
+
+    return vectorizer, X_bow
+
+
+# ==========================================
+# PART A2: TF-IDF
+# ==========================================
+
+def tfidf_analysis(texts):
+
+    print("\n===== PART A2: TF-IDF =====")
+
+    vectorizer = TfidfVectorizer()
+
+    X_tfidf = vectorizer.fit_transform(texts)
+
+    features = vectorizer.get_feature_names_out()
+
+    # Document frequency
+    df = np.asarray(
+        (X_tfidf > 0).sum(axis=0)
+    ).ravel()
+
+    # First document
+    row = X_tfidf.getrow(0)
+
+    weights = row.data
+    indices = row.indices
+
+    order = np.argsort(weights)
+
+    low = order[:3]
+    high = order[-3:][::-1]
+
+    print("\nDocument 0 excerpt:")
+    print(texts[0][:160])
+
+    print("\nType          | Word | TF-IDF Weight | Document Frequency")
+
+    for label, selected in [
+        ("High weight", high),
+        ("Near zero", low)
+    ]:
+
+        for pos in selected:
+
+            feature_index = indices[pos]
+
+            print(
+                f"{label:13} | "
+                f"{features[feature_index]:15} | "
+                f"{weights[pos]:.4f} | "
+                f"{df[feature_index]}"
+            )
+
+    return vectorizer, X_tfidf
+
+
+# ==========================================
+# PART A3: N-GRAM EXPERIMENTS
+# ==========================================
+
+def ngram_analysis(texts):
+
+    print("\n===== PART A3: N-GRAM ANALYSIS =====")
+
+    print("Using min_df=5 for all configurations.")
+
+    print("\nN-gram Range | Features | Matrix Shape | Sparsity")
+
+    results = []
+
+    for ngram in [(1, 1), (1, 2), (1, 3)]:
+
+        vectorizer = CountVectorizer(
+            ngram_range=ngram,
+            min_df=5
+        )
+
+        X = vectorizer.fit_transform(texts)
+
+        rows, cols = X.shape
+
+        sparsity = 100 * (
+            1 - X.nnz / (rows * cols)
+        )
+
+        results.append({
+            "N-gram range": str(ngram),
+            "Features": cols,
+            "Matrix shape": X.shape,
+            "Sparsity (%)": round(sparsity, 4)
+        })
+
+        print(
+            f"{str(ngram):12} | "
+            f"{cols:8} | "
+            f"{X.shape} | "
+            f"{sparsity:.4f}%"
+        )
+
+    return results
+
+
+# ==========================================
+# RUN ALL EXPERIMENTS
+# ==========================================
 
 def run_count_representations():
-    df = pd.read_csv(CLEANED_CSV_PATH).dropna(subset=["text_clean"])
-    texts = df["text_clean"].astype(str).tolist()
-    n_docs = len(texts)
-    token_lists = [t.split() for t in texts]
-    total_tokens = sum(len(t) for t in token_lists)
-    unique_vocab = len(set(w for t in token_lists for w in t))
-    avg_len = total_tokens / n_docs
 
-    print("=== Section 1: Cleaned Corpus Summary ===")
-    print(f"Number of documents              : {n_docs:,}")
-    print(f"Total tokens                     : {total_tokens:,}")
-    print(f"Vocabulary size (unique tokens)  : {unique_vocab:,}")
-    print(f"Average document length (tokens) : {avg_len:.1f}\n")
+    texts = load_texts()
 
-    print("=== Part A1: Bag of Words (CountVectorizer) ===")
-    bow_vec = CountVectorizer()
-    X_bow = bow_vec.fit_transform(texts)
-    rows, cols = X_bow.shape
-    nnz = X_bow.nnz
-    sparsity = 100.0 * (1.0 - nnz / (rows * cols))
-    print(f"Matrix shape (documents x vocab) : ({rows:,}, {cols:,})")
-    print(f"Non-zero entries                 : {nnz:,}")
-    print(f"Sparsity (% of zero entries)     : {sparsity:.4f}%\n")
+    corpus_summary(texts)
 
-    print("=== Part A2: TF-IDF (High-Weight vs. Near-Zero Common Words) ===")
-    tfidf_vec = TfidfVectorizer()
-    X_tfidf = tfidf_vec.fit_transform(texts)
-    vocab = np.array(tfidf_vec.get_feature_names_out())
-    doc_freqs = np.bincount(X_tfidf.indices, minlength=len(vocab))
+    bow_analysis(texts)
 
-    doc_idx = 0
-    print(f"Example Document Index: {doc_idx}")
-    print(f"Excerpt: {texts[doc_idx][:140]}...")
-    row_vec = X_tfidf[doc_idx].toarray().ravel()
-    nz_indices = np.where(row_vec > 0)[0]
-    sorted_nz = nz_indices[np.argsort(row_vec[nz_indices])[::-1]]
+    tfidf_analysis(texts)
 
-    print("\nTop 3 High-Weight Words in Document 0:")
-    for idx in sorted_nz[:3]:
-        print(f"  High weight      | Word: {vocab[idx]:15s} | TF-IDF: {row_vec[idx]:.4f} | Doc Freq (df): {doc_freqs[idx]:,}")
+    ngram_analysis(texts)
 
-    print("\nBottom 3 Lowest-Weight (Common) Words Present in Document 0:")
-    for idx in sorted_nz[-3:]:
-        print(f"  Near zero/common | Word: {vocab[idx]:15s} | TF-IDF: {row_vec[idx]:.4f} | Doc Freq (df): {doc_freqs[idx]:,}")
-
-    print("\n=== Part A3: N-gram Growth & Sparsity Table (min_df=5) ===")
-    for n_range, label in [((1, 1), "Unigrams (1,1)"), ((1, 2), "Uni + bigrams (1,2)"), ((1, 3), "Uni + bi + trigrams (1,3)")]:
-        vec = TfidfVectorizer(ngram_range=n_range, min_df=5)
-        X_ng = vec.fit_transform(texts)
-        r, c = X_ng.shape
-        sp = 100.0 * (1.0 - X_ng.nnz / (r * c))
-        print(f"{label:26s} | Features: {c:9,d} | Shape: ({r:,}, {c:,}) | Sparsity: {sp:.4f}%")
 
 if __name__ == "__main__":
     run_count_representations()
